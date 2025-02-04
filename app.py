@@ -63,7 +63,7 @@ def get_user(user_id):
   user = User.query.get(user_id)
 
   if user:
-    return jsonify({"id:": user.id, "username": user.username}), 200
+    return jsonify({"id:": user.id, "username": user.username, 'role': user.role}), 200
 
   return jsonify({"message": "User not found"}), 404
 
@@ -72,6 +72,9 @@ def get_user(user_id):
 def update_user(user_id):
   user = User.query.get(user_id)
   data = request.json
+
+  if user_id != current_user.id and current_user.role != 'admin':
+    return jsonify({"message": "You cannot update other users"}), 403
 
   if user:
     if data.get('password'):
@@ -88,6 +91,9 @@ def delete_user(user_id):
 
   if user_id == current_user.id:
     return jsonify({"message": "You cannot delete yourself"}), 400
+  
+  if current_user.role != 'admin':
+    return jsonify({"message": "You cannot delete other users"}), 403
 
   if user:
     db.session.delete(user)
