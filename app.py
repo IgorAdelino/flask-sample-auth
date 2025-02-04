@@ -2,6 +2,8 @@ from database import db
 from models.user import User
 from flask import Flask, request, jsonify
 from login_manager import login_manager, login_user, logout_user, login_required, current_user
+from hash import hash, check, salt
+
 
 
 app = Flask(__name__)
@@ -25,7 +27,7 @@ def login():
   if username and password:
     user = User.query.filter_by(username=username).first()
 
-    if user and user.password == password:
+    if user and check(str.encode(password), str.encode(user.password)):
       login_user(user)
       return jsonify({'message': "Authenticated!"}), 200
 
@@ -49,8 +51,8 @@ def create_user():
 
     if userInDabase:
       return jsonify({"message": "User with this username already exists"}), 400
-    
-    user = User(username=username, password=password)
+    hashed_password = hash(str.encode(password), salt(10))
+    user = User(username=username, password=hashed_password)
     db.session.add(user)
     db.session.commit()
     return jsonify({"message": "User created"}), 201
@@ -61,6 +63,7 @@ def create_user():
 @login_required
 def get_user(user_id):
   user = User.query.get(user_id)
+
 
   if user:
     return jsonify({"id:": user.id, "username": user.username, 'role': user.role}), 200
